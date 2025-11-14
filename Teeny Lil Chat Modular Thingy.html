@@ -1,0 +1,361 @@
+
+<!--
+Dev log
+ Teeny lil template chat modular thingy
+ no imports or actual code, just a nice template to work from.
+
+# design thingys :
+* Red and Black theme interface.
+* black background with red moving particles populated with a dynamic three.js background. 
+* Beneath is a left panel container.
+* Two centre containers perfectly sized with no overlap.
+* A lower container panel at the bottom rectangular chat style.  
+* a navbar with three buttons.
+
+# Note #
+I tried the make the code as small and light and singular as possible without any imports so it can be easily modified.
+
+If you want to use this locally offline with ollama or easy diffusion or other offline stuff.
+
+
+
+
+# Linux 
+
+1. update your py3 and pip in terminal
+
+ sudo apt install python3
+ sudo apt install python3-pip
+
+2. Then inside the folder you want to serve,
+   open a terminal and type:
+
+ python3 -m http.server 8000
+
+!! Boom !! Instant server. 
+!! Your browser goes to: http://localhost:8000/
+
+
+
+
+# Windez : Here's a lil Bat Skript.
+
+1. Open a text file and copy the following : 
+
+
+
+:: Tidy Intro
+@echo off
+cls
+
+:: Fancy Layout
+set n=^&echo.
+
+:: Step 1: Tidy Intro
+echo =================================================
+echo Welcome to the Teeny Python Server!
+echo =================================================
+echo.
+echo Date: %date%
+echo Time: %time%
+echo Starting a Local Python Server... %n%
+
+:: Step 2: Start a local server
+start "" python -m http.server
+
+:: Step 3: Show the user the address
+echo -------------------------------------------------
+echo Your local server is up and running!
+echo Open a browser and navigate to:
+echo http://localhost:8000
+echo -------------------------------------------------
+echo Press any key to exit.
+pause >nul
+
+
+
+2. Save it as Teeny-PyServer.bat
+3. Run it and..
+
+!! Boom !! Instant server. 
+!! Your browser goes to: http://localhost:8000/
+
+
+Anyways, just a little project to share and hope its helps as a good starting point.
+Enjoy.
+
+
+!! Oh I Added a Generator Views and a lil Three.js particle system for fun.
+And to see if people like it.
+
+# This is the views part you can remove
+generatorStats = {import:generator-stats-plugin}
+// <small><i> version [generatorStats("views")]</i></small>
+-->
+
+<title>Teeny Lil Chat Modular Thingy</title>
+<div class="content-container">
+  <nav class="navbar">
+    <button onclick="alert('Button 1 clicked')">Button 1</button>
+    <button onclick="alert('Button 2 clicked')">Button 2</button>
+    <button onclick="alert('Button 3 clicked')">Button 3</button>
+    <p><small><i> version [generatorStats("views")]</i></small></p>
+  </nav>
+  
+  <div class="main-content">
+    <div class="left-panel">Left Panel</div>
+    <div class="center-container">
+      <div class="center-box">Center Container 1</div>
+      <div class="center-box">Center Container 2</div>
+    </div>
+  </div>
+  
+  <div class="chat-panel">
+    <div class="chat-header">Chat</div>
+    <div class="chat-messages">
+      <div class="message">Welcome to the chat!</div>
+    </div>
+    <div class="chat-input">
+      <input type="text" placeholder="Type a message...">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from "https://esm.sh/three@0.177.0";
+
+// Create canvas for particles
+const particleCanvas = document.createElement('canvas');
+particleCanvas.id = 'particleCanvas';
+particleCanvas.style.position = 'fixed';
+particleCanvas.style.top = '0';
+particleCanvas.style.left = '0';
+particleCanvas.style.width = '100%';
+particleCanvas.style.height = '100%';
+particleCanvas.style.zIndex = '-1';
+document.body.insertBefore(particleCanvas, document.body.firstChild);
+
+// Three.js particle setup
+let scene = new THREE.Scene();
+let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+let renderer = new THREE.WebGLRenderer({ canvas: particleCanvas, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.xr.enabled = false; // Disable WebXR to fix the error
+
+// Create particles
+let particles = [];
+let particleCount = 200;
+let particleGeometry = new THREE.BufferGeometry();
+let positions = new Float32Array(particleCount * 3);
+let velocities = [];
+
+for (let i = 0; i < particleCount; i++) {
+  positions[i * 3] = (Math.random() - 0.5) * 10;
+  positions[i * 3 + 1] = (Math.random() - 0.5) * 10;
+  positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+  
+  velocities.push({
+    x: (Math.random() - 0.5) * 0.02,
+    y: (Math.random() - 0.5) * 0.02,
+    z: (Math.random() - 0.5) * 0.02
+  });
+}
+
+particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+let particleMaterial = new THREE.PointsMaterial({
+  color: 0xff0000,
+  size: 0.05,
+  transparent: true
+});
+
+let particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+scene.add(particleSystem);
+
+camera.position.z = 5;
+
+// Animation loop
+function animate() {
+  requestAnimationFrame(animate);
+  
+  let positions = particleGeometry.attributes.position.array;
+  
+  for (let i = 0; i < particleCount; i++) {
+    positions[i * 3] += velocities[i].x;
+    positions[i * 3 + 1] += velocities[i].y;
+    positions[i * 3 + 2] += velocities[i].z;
+    
+    // Boundary check - wrap particles around
+    if (Math.abs(positions[i * 3]) > 5) velocities[i].x *= -1;
+    if (Math.abs(positions[i * 3 + 1]) > 5) velocities[i].y *= -1;
+    if (Math.abs(positions[i * 3 + 2]) > 5) velocities[i].z *= -1;
+  }
+  
+  particleGeometry.attributes.position.needsUpdate = true;
+  particleSystem.rotation.x += 0.001;
+  particleSystem.rotation.y += 0.001;
+  
+  renderer.render(scene, camera);
+}
+
+animate();
+
+// Handle window resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #000;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  text-align: left; /* Override default center alignment */
+}
+
+.content-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-around;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-bottom: 2px solid #800000;
+}
+
+.navbar button {
+  padding: 10px 20px;
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.navbar button:hover {
+  background-color: #a00000;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  padding: 20px;
+}
+
+.left-panel {
+  width: 250px;
+  background-color: rgba(50, 0, 0, 0.7);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #800000;
+  margin-right: 20px;
+}
+
+.center-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.center-box {
+  flex: 1;
+  background-color: rgba(50, 0, 0, 0.7);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #800000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2em;
+}
+
+.chat-panel {
+  background-color: rgba(0, 0, 0, 0.7);
+  border-top: 2px solid #800000;
+  display: flex;
+  flex-direction: column;
+  height: 200px;
+}
+
+.chat-header {
+  padding: 10px 20px;
+  background-color: #800000;
+  font-weight: bold;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.message {
+  padding: 8px 12px;
+  margin: 5px 0;
+  background-color: rgba(100, 0, 0, 0.5);
+  border-radius: 4px;
+}
+
+.chat-input {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #800000;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 8px;
+  background-color: rgba(20, 0, 0, 0.7);
+  border: 1px solid #800000;
+  color: white;
+  border-radius: 4px 0 0 4px;
+}
+
+.chat-input button {
+  padding: 8px 15px;
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.chat-input button:hover {
+  background-color: #a00000;
+}
+</style>
+
+<script>
+function sendMessage() {
+  const input = document.querySelector('.chat-input input');
+  const message = input.value.trim();
+  
+  if (message) {
+    const messagesContainer = document.querySelector('.chat-messages');
+    const newMessage = document.createElement('div');
+    newMessage.className = 'message';
+    newMessage.textContent = message;
+    messagesContainer.appendChild(newMessage);
+    input.value = '';
+    
+    // Scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+}
+</script>
